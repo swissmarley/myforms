@@ -1,4 +1,4 @@
-# MyForms - Modern Form Builder Application
+# 📋 MyForms - Modern Form Builder App 📝
 
 A comprehensive, feature-complete form builder application that rivals Microsoft Forms and Google Forms. Create surveys, share them via generated links, and analyze responses through a comprehensive analytics dashboard.
 
