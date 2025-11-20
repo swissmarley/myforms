@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  CHECKBOXES
+  SHORT_ANSWER
+  LONG_ANSWER
+  DROPDOWN
+  LINEAR_SCALE
+  DATE
+  TIME
+  DATETIME
+  FILE_UPLOAD
+  RICH_TEXT
+}
+
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  forms     Form[]
+  responses Response[]
+}
+
+model Form {
+  id                String     @id @default(uuid())
+  title             String
+  description       String?
+  userId            String
+  status            FormStatus @default(DRAFT)
+  shareableUrl      String     @unique
+  password          String?
+  expiresAt         DateTime?
+  responseLimit     Int?
+  allowMultiple     Boolean    @default(false)
+  collectEmail      Boolean    @default(false)
+  showProgress      Boolean    @default(true)
+  confirmationMsg   String?
+  theme             Json?      // { colors, fonts, backgroundImage }
+  settings          Json?      // { captcha, customDomain, etc. }
+  version           Int        @default(1)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  publishedAt       DateTime?
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions Question[]
+  responses Response[]
+  folderId  String?
+  folder    Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([shareableUrl])
+  @@index([status])
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[] @relation("FolderHierarchy")
+  forms    Form[]
+
+  @@index([userId])
+}
+
+model Question {
+  id          String       @id @default(uuid())
+  formId      String
+  type        QuestionType
+  title       String
+  description String?
+  required    Boolean      @default(false)
+  order       Int
+  validation  Json?        // { minLength, maxLength, pattern, etc. }
+  options     Json?        // For multiple choice, checkboxes, dropdown
+  settings    Json?        // { randomize, allowOther, etc. }
+  conditional Json?        // Conditional logic rules
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  form      Form       @relation(fields: [formId], references: [id], onDelete: Cascade)
+  responses Answer[]
+
+  @@index([formId])
+  @@index([formId, order])
+}
+
+model Response {
+  id         String   @id @default(uuid())
+  formId     String
+  userId     String?  // Optional, for authenticated responses
+  email      String?
+  startedAt  DateTime @default(now())
+  completedAt DateTime?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?    // Additional metadata
+
+  form     Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  answers  Answer[]
+
+  @@index([formId])
+  @@index([userId])
+  @@index([completedAt])
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  responseId String
+  questionId String
+  value      Json     // Flexible JSON to store any answer type
+  fileUrl    String?  // For file uploads
+  createdAt  DateTime @default(now())
+
+  response Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([responseId, questionId])
+  @@index([responseId])
+  @@index([questionId])
+}
+
+model FormTemplate {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  category    String
+  formData    Json         // Complete form structure
+  isPublic    Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([category])
+  @@index([isPublic])
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  formId    String
+  url       String
+  events    String[] // ["response.submitted", "response.started"]
+  secret    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([formId])
+}
+
