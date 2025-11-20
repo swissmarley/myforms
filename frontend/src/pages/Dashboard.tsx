@@ -1,9 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, FileText, Eye, BarChart3, MoreVertical, Archive } from 'lucide-react';
+import type { ComponentType, SVGProps } from 'react';
 import { formsApi } from '../services/api';
 import { Form } from '../types';
 import toast from 'react-hot-toast';
+import { BarChart3, FileText, Eye } from 'lucide-react';
+
+function StatCard({
+  label,
+  value,
+  description,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  description: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+}) {
+  return (
+    <div className="card space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-gray-500">{label}</p>
+        <Icon className="h-6 w-6 text-primary-500" />
+      </div>
+      <p className="text-3xl font-semibold text-gray-900">{value}</p>
+      <p className="text-sm text-gray-500">{description}</p>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [forms, setForms] = useState<Form[]>([]);
@@ -24,138 +48,130 @@ export default function Dashboard() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this form?')) return;
-
-    try {
-      await formsApi.delete(id);
-      toast.success('Form deleted');
-      loadForms();
-    } catch (error: any) {
-      toast.error('Failed to delete form');
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  const publishedForms = forms.filter((form) => form.status === 'PUBLISHED');
+  const drafts = forms.filter((form) => form.status === 'DRAFT');
+  const totalResponses = forms.reduce(
+    (acc, form) => acc + (form._count?.responses || 0),
+    0,
+  );
+  const recentForms = forms.slice(0, 3);
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Forms</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Create and manage your survey forms
-          </p>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <Link
-            to="/forms/new"
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Form
-          </Link>
-        </div>
+    <div className="space-y-8">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Total forms"
+          value={forms.length.toString()}
+          description={`${drafts.length} drafts · ${publishedForms.length} published`}
+          icon={FileText}
+        />
+        <StatCard
+          label="Published forms"
+          value={publishedForms.length.toString()}
+          description="Live forms are ready to collect responses"
+          icon={BarChart3}
+        />
+        <StatCard
+          label="Responses collected"
+          value={totalResponses.toString()}
+          description="Sum of all published form submissions"
+          icon={Eye}
+        />
       </div>
 
-      {forms.length === 0 ? (
-        <div className="mt-8 text-center py-12">
-          <FileText className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No forms</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Get started by creating a new form.
-          </p>
-          <div className="mt-6">
-            <Link
-              to="/forms/new"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Form
-            </Link>
+      <div className="card space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">Recent forms</h2>
+            <p className="text-sm text-gray-500">
+              Pick a form to edit, publish, preview, or jump to analytics.
+            </p>
           </div>
+          <Link
+            to="/forms"
+            className="inline-flex items-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          >
+            Manage forms
+          </Link>
         </div>
-      ) : (
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {forms.map((form) => (
-            <div key={form.id} className="card hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-medium text-gray-900">{form.title}</h3>
-                  {form.description && (
-                    <p className="mt-1 text-sm text-gray-500 line-clamp-2">
-                      {form.description}
-                    </p>
-                  )}
-                </div>
-                <div className="ml-4">
+        {loading ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        ) : recentForms.length === 0 ? (
+          <div className="text-sm text-center text-gray-600">
+            No forms yet. Click below to create the first one.
+            <div className="mt-4">
+              <Link
+                to="/forms/new"
+                className="inline-flex items-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              >
+                + New form
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentForms.map((form) => (
+              <div key={form.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{form.title}</h3>
+                    {form.description && (
+                      <p className="text-sm text-gray-600">{form.description}</p>
+                    )}
+                  </div>
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${
                       form.status === 'PUBLISHED'
                         ? 'bg-green-100 text-green-800'
                         : form.status === 'ARCHIVED'
-                        ? 'bg-gray-100 text-gray-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-gray-100 text-gray-800'
+                          : 'bg-yellow-100 text-yellow-800'
                     }`}
                   >
                     {form.status}
                   </span>
                 </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                <div className="flex space-x-4">
-                  <span>{form._count?.questions || 0} questions</span>
-                  <span>{form._count?.responses || 0} responses</span>
-                </div>
-              </div>
-
-              <div className="mt-4 flex space-x-2">
-                <Link
-                  to={`/forms/${form.id}/edit`}
-                  className="flex-1 btn btn-primary text-center"
-                >
-                  Edit
-                </Link>
-                {form.status === 'PUBLISHED' && (
-                  <>
-                    <Link
-                      to={`/forms/${form.id}/analytics`}
-                      className="btn btn-secondary"
-                      title="Analytics"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                    </Link>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  <Link
+                    to={`/forms/${form.id}/edit`}
+                    className="btn btn-secondary"
+                  >
+                    Edit
+                  </Link>
+                  <Link
+                    to={`/forms/${form.id}/analytics`}
+                    className="btn btn-secondary"
+                  >
+                    Analytics
+                  </Link>
+                  <Link
+                    to={`/forms/${form.id}/settings`}
+                    className="btn btn-secondary"
+                  >
+                    Settings
+                  </Link>
+                  {form.status === 'PUBLISHED' ? (
                     <a
                       href={`/form/${form.shareableUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-secondary"
-                      title="View"
                     >
-                      <Eye className="h-4 w-4" />
+                      Preview
                     </a>
-                  </>
-                )}
-                <button
-                  onClick={() => handleDelete(form.id)}
-                  className="btn btn-danger"
-                  title="Delete"
-                >
-                  <Archive className="h-4 w-4" />
-                </button>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      publish to preview
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-

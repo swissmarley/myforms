@@ -8,9 +8,9 @@ export default function Layout() {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Forms', href: '/dashboard', icon: FileText },
-    { name: 'Analytics', href: '/dashboard', icon: BarChart3 },
-    { name: 'Settings', href: '/dashboard', icon: Settings },
+    { name: 'Forms', href: '/forms', icon: FileText },
+    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   return (
@@ -27,7 +27,9 @@ export default function Layout() {
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {navigation.map((item) => {
                   const Icon = item.icon;
-                  const isActive = location.pathname === item.href;
+                  const isActive =
+                    location.pathname === item.href ||
+                    location.pathname.startsWith(item.href);
                   return (
                     <Link
                       key={item.name}
@@ -65,4 +67,3 @@ export default function Layout() {
     </div>
   );
 }
-

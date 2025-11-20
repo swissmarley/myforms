@@ -34,6 +34,7 @@ export interface Form {
   expiresAt?: string;
   responseLimit?: number;
   allowMultiple: boolean;
+  allowMultipleConfigured?: boolean;
   collectEmail: boolean;
   showProgress: boolean;
   confirmationMsg?: string;
@@ -157,4 +158,3 @@ export interface Trend {
   date: string;
   count: number;
 }
-
