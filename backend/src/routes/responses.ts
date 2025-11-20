@@ -43,7 +43,7 @@ router.post('/submit', async (req, res, next) => {
     }
 
     // Check if multiple responses allowed
-    if (!form.allowMultiple) {
+    if (form.allowMultipleConfigured && !form.allowMultiple) {
       const existingResponse = await prisma.response.findFirst({
         where: {
           formId: form.id,
@@ -191,4 +191,3 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
 });
 
 export default router;
-

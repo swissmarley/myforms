@@ -59,6 +59,7 @@ model Form {
   expiresAt         DateTime?
   responseLimit     Int?
   allowMultiple     Boolean    @default(false)
+  allowMultipleConfigured Boolean @default(false)
   collectEmail      Boolean    @default(false)
   showProgress      Boolean    @default(true)
   confirmationMsg   String?
@@ -179,4 +180,3 @@ model Webhook {
 
   @@index([formId])
 }
-

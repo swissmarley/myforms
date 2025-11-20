@@ -12,6 +12,7 @@ const createFormSchema = z.object({
   description: z.string().optional(),
   theme: z.any().optional(),
   settings: z.any().optional(),
+  allowMultiple: z.boolean().optional(),
 });
 
 const updateFormSchema = z.object({
@@ -126,6 +127,8 @@ router.post('/', authenticate, async (req: AuthRequest, res, next) => {
         ...data,
         userId: req.userId!,
         shareableUrl,
+        allowMultiple: data.allowMultiple ?? true,
+        allowMultipleConfigured: data.allowMultiple !== undefined,
       },
       include: {
         questions: true,
@@ -160,6 +163,9 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res, next) => {
 
     // Increment version on significant changes
     const updateData: any = { ...data };
+    if (data.allowMultiple !== undefined) {
+      updateData.allowMultipleConfigured = true;
+    }
     if (data.status || data.title || data.theme) {
       updateData.version = { increment: 1 };
     }
@@ -259,4 +265,3 @@ router.get('/:id/qrcode', authenticate, async (req: AuthRequest, res, next) => {
 });
 
 export default router;
-
