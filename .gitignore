@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+package-lock.json
 frontend/node_modules/
 backend/node_modules/
 
@@ -55,3 +56,5 @@ coverage/
 tmp/
 temp/
 
+.DS_Store
+Thumbs.db
